@@ -88,6 +88,13 @@ Notes
 - Cucumber World is `specs/support/world.js` which wires Playwright and page objects.
 - Step definitions are in `specs/steps/`; integration steps are isolated in `integration.steps.js`.
 
+The `@storage-tables` scenario is a non-UI integration test. It publishes the request through
+the Service Bus SDK, polls `NotificationLog` through the Azure Tables SDK, and asserts a 2xx
+HTTP status plus `Succeeded=true`. Run it with `npm run test:integration:storage-tables`.
+It uses Azure CLI/OIDC identity by default; grant Service Bus Data Sender on the namespace
+and Storage Table Data Reader on the storage account. Dedicated connection strings can be
+provided with `NOTIFICATION_SERVICE_BUS_CONNECTION` and `NOTIFICATION_TABLE_CONNECTION_STRING`.
+
 ## CI/CD (GitHub Actions)
 
 ## Microsoft authentication
