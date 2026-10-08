@@ -124,7 +124,7 @@ jobs:
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET || vars.AZURE_CLIENT_SECRET }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID || vars.AZURE_TENANT_ID }}
           AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-          ORG_REPO_TOKEN: ${{ secrets.ORG_REPO_TOKEN }}
+          GH_TOKEN: ${{ secrets.ORG_REPO_TOKEN }}
           SERVICE_BUS_CONNECTION: ${{ secrets.SERVICE_BUS_CONNECTION }}
           STORAGE_SAS_URL: ${{ secrets.STORAGE_SAS_URL }}
           STORAGE_CONNECTION_STRING: ${{ secrets.STORAGE_CONNECTION_STRING }}
@@ -151,8 +151,18 @@ jobs:
             has_data_access=true
           fi
 
+          # Presence alone is not enough: checkout needs read access to both
+          # private sibling repositories.
           has_org_token=false
-          if [ -n "$ORG_REPO_TOKEN" ]; then has_org_token=true; fi
+          if [ -n "$GH_TOKEN" ]; then
+            has_org_token=true
+            for repo in allata-llc/mcp-server allata-llc/pipeline-function; do
+              if ! gh api "repos/$repo/contents" >/dev/null 2>&1; then
+                has_org_token=false
+                break
+              fi
+            done
+          fi
 
           # Queue-scoped "bulk-send-key" primary keys, one per queue. The Send claim cannot
           # peek, and SERVICE_BUS_CONNECTION here is an entity-scoped send-only string, so the
@@ -177,12 +187,15 @@ jobs:
             echo "| Azure federated identity (OIDC) | $has_azure |"
             echo "| Connection string / SAS fallback | $has_shared_secret |"
             echo "| Azure data-plane access (either of the above) | $has_data_access |"
-            echo "| ORG_REPO_TOKEN (private sibling repos) | $has_org_token |"
+            echo "| ORG_REPO_TOKEN (read access to both private sibling repos) | $has_org_token |"
             echo "| Service Bus bulk-send-key SAS keys | $has_sas |"
           } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "$has_data_access" != "true" ]; then
             echo "::warning::No Azure data-plane credentials configured - the Azure jobs will be skipped. Set AZURE_CLIENT_ID/AZURE_TENANT_ID (OIDC), or SERVICE_BUS_CONNECTION plus STORAGE_SAS_URL."
+          fi
+          if [ "$has_org_token" != "true" ]; then
+            echo "::warning::Integration tests will be skipped. Configure ORG_REPO_TOKEN with read access to allata-llc/mcp-server and allata-llc/pipeline-function."
           fi
 
   integration:
