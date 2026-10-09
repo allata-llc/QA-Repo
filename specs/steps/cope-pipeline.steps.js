@@ -3,6 +3,7 @@ const { ServiceBusClient } = require('@azure/service-bus');
 const { BlobServiceClient } = require('@azure/storage-blob');
 const { Given, When, Then } = require('@cucumber/cucumber');
 const { createAzureCredential } = require('../support/azure-credential');
+const { createUniqueCorrelationId } = require('../support/cope-pipeline');
 
 const serviceBusNamespace = () => {
   const fqdn = process.env.SERVICE_BUS_NAMESPACE_FQDN;
@@ -76,12 +77,12 @@ Given('the Cope Azure pipeline integration is configured', function () {
 
 When('I publish a property request to the cope pipeline queue with correlation id {string}, source system {string}, address line1 {string}, city {string}, state {string} and zip code {string}',
   async function (correlationId, sourceSystem, line1, city, state, zipCode) {
-    this.copeCorrelationId = correlationId;
+    this.copeCorrelationId = createUniqueCorrelationId(correlationId);
     this.copePublishedAt = new Date();
 
     this.copeMessage = {
       requestMetadata: {
-        correlationId,
+        correlationId: this.copeCorrelationId,
         sourceSystem,
         requestTimestamp: new Date().toISOString()
       },
@@ -94,13 +95,13 @@ When('I publish a property request to the cope pipeline queue with correlation i
       }
     };
 
-    log(`Publishing property request for correlation id "${correlationId}" to queue "${queueName()}"...`);
+    log(`Publishing property request for correlation id "${this.copeCorrelationId}" to queue "${queueName()}"...`);
     await this.serviceBusSender.sendMessages({
       body: this.copeMessage,
       contentType: 'application/json',
-      messageId: this.copeMessage.requestMetadata.correlationId
+      messageId: this.copeCorrelationId
     });
-    log(`Published message for correlation id "${correlationId}" at ${this.copePublishedAt.toISOString()}.`);
+    log(`Published message for correlation id "${this.copeCorrelationId}" at ${this.copePublishedAt.toISOString()}.`);
   });
 
 Then('an output blob for the request is written to storage account {string} within {int} seconds', { timeout: 300 * 1000 }, async function (_storageAccountName, timeoutSeconds) {
