@@ -44,6 +44,10 @@ on:
   schedule:
     # Nightly safety net - catches environment drift on days with no pushes.
     - cron: '0 6 * * *'
+    # 10:00 AM IST (04:30 UTC).
+    - cron: '30 4 * * *'
+    # 6:00 PM IST (12:30 UTC).
+    - cron: '30 12 * * *'
   workflow_dispatch:
     inputs:
       environment:
