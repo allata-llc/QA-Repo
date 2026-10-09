@@ -44,8 +44,8 @@ on:
   schedule:
     # 10:00 AM IST (04:30 UTC).
     - cron: '30 4 * * *'
-    # 6:00 PM IST (12:30 UTC).
-    - cron: '30 12 * * *'
+    # 6:20 PM IST (12:50 UTC).
+    - cron: '50 12 * * *'
   workflow_dispatch:
     inputs:
       environment:
