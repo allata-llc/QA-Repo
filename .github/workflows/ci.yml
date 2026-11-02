@@ -234,14 +234,14 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: '22'
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: Install Azure Functions Core Tools
-        run: npm install -g --allow-scripts=azure-functions-core-tools azure-functions-core-tools@4
+        run: npm install -g azure-functions-core-tools@4 --unsafe-perm true && func --version
 
       - name: Install AgenticAI dependencies
         working-directory: agenticai
