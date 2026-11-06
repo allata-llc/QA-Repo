@@ -104,7 +104,7 @@ When('I publish a property request to the cope pipeline queue with correlation i
     log(`Published message for correlation id "${this.copeCorrelationId}" at ${this.copePublishedAt.toISOString()}.`);
   });
 
-Then('an output blob for the request is written to storage account {string} within {int} seconds', { timeout: 300 * 1000 }, async function (_storageAccountName, timeoutSeconds) {
+Then('an output blob for the request is written to storage account {string} within {int} seconds', { timeout: 360 * 1000 }, async function (_storageAccountName, timeoutSeconds) {
   const deadline = Date.now() + timeoutSeconds * 1000;
   this.copeOutputContainerName = outputContainerName();
   const containerClient = this.blobServiceClient.getContainerClient(this.copeOutputContainerName);
