@@ -1,15 +1,9 @@
 const assert = require('node:assert/strict');
-const { ServiceBusClient } = require('@azure/service-bus');
 const { BlobServiceClient } = require('@azure/storage-blob');
 const { Given, When, Then } = require('@cucumber/cucumber');
 const { createAzureCredential } = require('../support/azure-credential');
 const { createUniqueCorrelationId } = require('../support/cope-pipeline');
-
-const serviceBusNamespace = () => {
-  const fqdn = process.env.SERVICE_BUS_NAMESPACE_FQDN;
-  assert.ok(fqdn, 'Set SERVICE_BUS_NAMESPACE_FQDN (e.g. pocsb.servicebus.windows.net) to run cope pipeline scenarios');
-  return fqdn;
-};
+const { connectCopePipelineServiceBus } = require('../support/cope-pipeline-service-bus');
 
 const storageAccountUrl = () => {
   const url = process.env.STORAGE_ACCOUNT_URL;
@@ -35,13 +29,7 @@ function log(message) {
 // then shared-secret fallbacks for environments where creating an app registration or
 // assigning RBAC needs an administrator.
 function buildServiceBusClient() {
-  const connection = process.env.SERVICE_BUS_CONNECTION?.trim();
-  if (connection) {
-    log('Service Bus: using SERVICE_BUS_CONNECTION.');
-    return new ServiceBusClient(connection);
-  }
-  log('Service Bus: using Azure identity (OIDC / az login).');
-  return new ServiceBusClient(serviceBusNamespace(), createAzureCredential());
+  return connectCopePipelineServiceBus();
 }
 
 function buildBlobServiceClient() {
@@ -69,8 +57,10 @@ function buildBlobServiceClient() {
 
 Given('the Cope Azure pipeline integration is configured', function () {
   log(`Configuring Service Bus (queue "${queueName()}") and Blob Storage (container "${outputContainerName()}") clients...`);
-  this.serviceBusClient = buildServiceBusClient();
-  this.serviceBusSender = this.serviceBusClient.createSender(queueName());
+  const serviceBus = buildServiceBusClient();
+  log(`Service Bus: using ${serviceBus.authMode}.`);
+  this.serviceBusClient = serviceBus.client;
+  this.serviceBusSender = serviceBus.sender;
   this.blobServiceClient = buildBlobServiceClient();
   log('Cope pipeline integration configured.');
 });

@@ -321,6 +321,9 @@ jobs:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID || vars.AZURE_TENANT_ID }}
           # No-admin-required fallback.
           SERVICE_BUS_CONNECTION: ${{ secrets.SERVICE_BUS_CONNECTION }}
+          SERVICE_BUS_SAS_KEY_NAME: ${{ vars.SERVICE_BUS_SAS_KEY_NAME || 'bulk-send-key' }}
+          SERVICE_BUS_SAS_KEY_COPE_REQUESTS: ${{ secrets.SERVICE_BUS_SAS_KEY_COPE_REQUESTS }}
+          SERVICE_BUS_SAS_KEY_COPE_REQUESTS_DEV: ${{ secrets.SERVICE_BUS_SAS_KEY_COPE_REQUESTS_DEV }}
           STORAGE_SAS_URL: ${{ secrets.STORAGE_SAS_URL }}
           STORAGE_CONNECTION_STRING: ${{ secrets.STORAGE_CONNECTION_STRING }}
           # Environment-specific resource names (Settings > Environments > Variables)

@@ -42,6 +42,11 @@ function resolveSasPolicy(env = process.env, policyName, queueName) {
   return { keyName, key };
 }
 
+function buildQueueSasConnectionString({ env = process.env, namespaceName, queueName, policyName } = {}) {
+  const { keyName, key } = resolveSasPolicy(env, policyName, queueName);
+  return `Endpoint=sb://${namespaceHost(env, namespaceName)}/;SharedAccessKeyName=${keyName};SharedAccessKey=${key};EntityPath=${queueName}`;
+}
+
 // Mirrors the Service Bus SAS contract: HMAC-SHA256 over "<url-encoded-uri>\n<expiry>".
 function generateSasToken(resourceUri, keyName, key, expirySeconds = DEFAULT_SAS_TTL_SECONDS) {
   const expiry = Math.floor(Date.now() / 1000) + expirySeconds;
@@ -135,6 +140,7 @@ module.exports = {
   SERVICE_BUS_API_VERSION,
   bodyAsText,
   brokerProperties,
+  buildQueueSasConnectionString,
   buildQueueSasToken,
   createPeekClient,
   generateSasToken,
