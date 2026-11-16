@@ -17,7 +17,7 @@ const storageAccountUrl = () => {
   return url;
 };
 
-const queueName = () => process.env.COPE_QUEUE_NAME || 'cope_request';
+const queueName = () => process.env.COPE_QUEUE_NAME || 'cope-requests';
 const outputContainerName = () => process.env.COPE_OUTPUT_CONTAINER || 'cope-agent-responses';
 const pollIntervalMs = () => Number(process.env.OUTPUT_POLL_INTERVAL_MS || 5000);
 
@@ -80,19 +80,26 @@ When('I publish a property request to the cope pipeline queue with correlation i
     this.copeCorrelationId = createUniqueCorrelationId(correlationId);
     this.copePublishedAt = new Date();
 
+    // Shape must match AnalysisRequest in pipeline-orchestrator; invalid messages are rejected and never produce output.
     this.copeMessage = {
-      requestMetadata: {
-        correlationId: this.copeCorrelationId,
-        sourceSystem,
-        requestTimestamp: new Date().toISOString()
-      },
-      propertyAddress: {
-        line1,
-        line2: '',
-        city,
-        state,
-        zipCode
-      }
+      sourceSystem,
+      requests: [
+        {
+          clientRef: this.copeCorrelationId,
+          locationNo: 1,
+          buildingNo: 1,
+          maxAgeDays: 365,
+          address: {
+            line1,
+            line2: '',
+            city,
+            state,
+            postalCode: zipCode,
+            // Not provided by the feature step; required by the orchestrator schema.
+            county: ''
+          }
+        }
+      ]
     };
 
     log(`Publishing property request for correlation id "${this.copeCorrelationId}" to queue "${queueName()}"...`);
