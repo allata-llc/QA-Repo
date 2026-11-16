@@ -4,4 +4,13 @@ function createUniqueCorrelationId(prefix) {
   return `${prefix}-${randomUUID()}`;
 }
 
-module.exports = { createUniqueCorrelationId };
+function createCopePipelineMessage(body, correlationId) {
+  return {
+    body,
+    contentType: 'application/json',
+    messageId: correlationId,
+    correlationId
+  };
+}
+
+module.exports = { createCopePipelineMessage, createUniqueCorrelationId };

@@ -3,7 +3,7 @@ const { ServiceBusClient } = require('@azure/service-bus');
 const { BlobServiceClient } = require('@azure/storage-blob');
 const { Given, When, Then } = require('@cucumber/cucumber');
 const { createAzureCredential } = require('../support/azure-credential');
-const { createUniqueCorrelationId } = require('../support/cope-pipeline');
+const { createCopePipelineMessage, createUniqueCorrelationId } = require('../support/cope-pipeline');
 
 const serviceBusNamespace = () => {
   const fqdn = process.env.SERVICE_BUS_NAMESPACE_FQDN;
@@ -103,11 +103,9 @@ When('I publish a property request to the cope pipeline queue with correlation i
     };
 
     log(`Publishing property request for correlation id "${this.copeCorrelationId}" to queue "${queueName()}"...`);
-    await this.serviceBusSender.sendMessages({
-      body: this.copeMessage,
-      contentType: 'application/json',
-      messageId: this.copeCorrelationId
-    });
+    await this.serviceBusSender.sendMessages(
+      createCopePipelineMessage(this.copeMessage, this.copeCorrelationId)
+    );
     log(`Published message for correlation id "${this.copeCorrelationId}" at ${this.copePublishedAt.toISOString()}.`);
   });
 
