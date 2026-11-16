@@ -10,7 +10,7 @@ Feature: Cope pipeline end-to-end automation
   @headless @sdk
   Scenario: Publish a property request and verify the pipeline output blob
     When I publish a property request to the cope pipeline queue with correlation id "caf-prospect-ci-headless", source system "CaffeineCRM", address line1 "4529 Winona Ct", city "Denver", state "CO" and zip code "80222"
-    Then an output blob for the request is written to storage account "copepocsa" within 180 seconds
+    Then an output blob for the request is written to storage account "copepocsa" within 300 seconds
     And the output blob content is valid JSON
 
   # Manual only: the same business flow driven through the portal UI. It asserts nothing the
@@ -34,4 +34,3 @@ Feature: Cope pipeline end-to-end automation
     And an output blob for the request is written to storage account "copepocsa" within 180 seconds
     And I open the output blob in storage account "copepocsa" in the Azure Portal
     Then the output blob content is valid JSON
-

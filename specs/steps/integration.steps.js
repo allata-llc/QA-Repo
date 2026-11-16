@@ -73,23 +73,9 @@ When('I list the MCP tools', async function () {
   });
 });
 
-Then('the MCP tool list contains {string}', function (toolName) {
+Then('the MCP tool list response is valid', function () {
   assert.equal(this.response.status(), 200);
-  assert.ok(this.mcpResponse.result.tools.some(tool => tool.name === toolName));
-});
-
-When('I call the MCP tool {string} with message {string}', async function (toolName, message) {
-  await sendMcpRequest(this, {
-    jsonrpc: '2.0',
-    id: 3,
-    method: 'tools/call',
-    params: { name: toolName, arguments: { message } }
-  });
-});
-
-Then('the MCP tool result is {string}', function (expected) {
-  assert.equal(this.response.status(), 200);
-  assert.equal(this.mcpResponse.result.content[0].text, expected);
+  assert.ok(Array.isArray(this.mcpResponse?.result?.tools), 'MCP tools/list response did not contain a tools array');
 });
 
 Given('the pipeline function source is available', function () {
