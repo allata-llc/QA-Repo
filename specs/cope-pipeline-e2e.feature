@@ -1,6 +1,6 @@
 @integration @cope @live
 Feature: Cope pipeline end-to-end automation
-  Publish a property request to the Azure Service Bus queue "cope-requests" (namespace cope-pocsb),
+  Publish a property request to the configured Azure Service Bus queue (namespace cope-pocsb),
   let Azure Foundry process it, and verify the result is written as a blob in the "cope-agent-responses"
   container of storage account "copepocsa".
 

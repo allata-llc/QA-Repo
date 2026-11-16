@@ -326,7 +326,7 @@ jobs:
           # Environment-specific resource names (Settings > Environments > Variables)
           SERVICE_BUS_NAMESPACE_FQDN: ${{ vars.SERVICE_BUS_NAMESPACE_FQDN || 'cope-pocsb.servicebus.windows.net' }}
           STORAGE_ACCOUNT_URL: ${{ vars.STORAGE_ACCOUNT_URL || 'https://copepocsa.blob.core.windows.net' }}
-          COPE_QUEUE_NAME: ${{ vars.COPE_QUEUE_NAME || 'cope-requests' }}
+          COPE_QUEUE_NAME: ${{ vars.COPE_QUEUE_NAME || ((inputs.environment || 'dev') == 'dev' && 'cope-requests-dev') || 'cope-requests' }}
         run: npm run test:integration:cope-e2e
 
   cope-sas:
@@ -382,5 +382,5 @@ jobs:
           SERVICE_BUS_NAMESPACE_FQDN: ${{ vars.SERVICE_BUS_NAMESPACE_FQDN || 'cope-pocsb.servicebus.windows.net' }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID || vars.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID || vars.AZURE_TENANT_ID }}
-          PIPELINE_QUEUE_NAME: ${{ vars.COPE_QUEUE_NAME || 'cope-requests' }}
+          PIPELINE_QUEUE_NAME: ${{ vars.COPE_QUEUE_NAME || ((inputs.environment || 'dev') == 'dev' && 'cope-requests-dev') || 'cope-requests' }}
         run: npm run test:integration:pipeline:live
