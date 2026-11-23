@@ -120,63 +120,6 @@ class AzurePortalPage {
     await this.page.waitForTimeout(4000);
     await blade.getByRole('dialog', { name: 'Send messages' }).getByRole('button', { name: 'Close', exact: true }).click();
   }
-
-  // Deep-links straight to the container's blob list, bypassing the storage account
-  // overview/left-nav so the run doesn't depend on that blade's layout. The Storage
-  // Browser iframe can intermittently fail to render on a cold navigation, so retry.
-  async openStorageContainer(storageAccountName, containerName) {
-    const url = `https://portal.azure.com/#@allata.com/resource/subscriptions/${this.subscriptionId}/resourceGroups/${this.resourceGroupName}/providers/Microsoft.Storage/storageAccounts/${storageAccountName}/containersList`;
-    // Three attempts balances speed (fewer reload cycles than before) against resilience,
-    // now that the HTTP/2 root cause of the old hangs is fixed.
-    for (let attempt = 1; attempt <= 3; attempt += 1) {
-      await this.page.goto(url);
-      await this.page.waitForLoadState('load').catch(() => {});
-      try {
-        const containerButton = this.blade().getByRole('button', { name: containerName, exact: true });
-        await containerButton.waitFor({ state: 'visible', timeout: 60 * 1000 });
-        await containerButton.click();
-        return;
-      } catch (err) {
-        if (attempt === 3) throw err;
-      }
-    }
-  }
-
-  // Re-fills the prefix filter on each attempt since a reload clears it and the blob
-  // grid is virtualized, so an unfiltered list may not render our specific blob's row.
-  // Three attempts balances speed against resilience now that the HTTP/2 root cause
-  // of the old hangs is fixed.
-  async openBlob(blobName) {
-    for (let attempt = 1; attempt <= 3; attempt += 1) {
-      try {
-        const blade = this.blade();
-        const searchBox = blade.getByPlaceholder('Search blobs by prefix (case-sensitive)');
-        await searchBox.waitFor({ state: 'visible', timeout: 45 * 1000 });
-        await searchBox.fill(blobName);
-        // The prefix filter is a server-side List Blobs call, not a client-side instant
-        // filter, so it only fires once Enter is pressed - filling the box alone never
-        // triggers the search and the blob row never appears.
-        await searchBox.press('Enter');
-        const blobButton = blade.getByRole('button', { name: blobName, exact: true });
-        await blobButton.waitFor({ state: 'visible', timeout: 40 * 1000 });
-        await blobButton.click();
-        return;
-      } catch (err) {
-        if (attempt === 3) throw err;
-        await this.page.reload();
-        await this.page.waitForLoadState('load').catch(() => {});
-      }
-    }
-  }
-
-  // The blob details panel (Overview/Edit tabs) renders in the shell, not the extension iframe.
-  async viewBlobContent() {
-    await this.page.getByRole('tab', { name: 'Edit' }).click();
-    await this.page.getByRole('tabpanel', { name: 'Edit' }).waitFor();
-    // The tabpanel mounts before the Monaco editor finishes painting the blob text, so
-    // pause briefly to make sure the actual content is visible, not just the empty shell.
-    await this.page.waitForTimeout(3000);
-  }
 }
 
 module.exports = { AzurePortalPage };

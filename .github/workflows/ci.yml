@@ -117,6 +117,7 @@ jobs:
       has_data_access: ${{ steps.check.outputs.has_data_access }}
       has_org_token: ${{ steps.check.outputs.has_org_token }}
       has_sas: ${{ steps.check.outputs.has_sas }}
+      has_gateway: ${{ steps.check.outputs.has_gateway }}
     steps:
       # Secrets can't be read in "if:" conditions, but they can be read as step env vars,
       # so their presence is converted into job outputs for downstream jobs to gate on.
@@ -133,6 +134,7 @@ jobs:
           SERVICE_BUS_SAS_KEY_COPE_REQUESTS: ${{ secrets.SERVICE_BUS_SAS_KEY_COPE_REQUESTS }}
           SERVICE_BUS_SAS_KEY_COPE_REQUESTS_DEV: ${{ secrets.SERVICE_BUS_SAS_KEY_COPE_REQUESTS_DEV }}
           SERVICE_BUS_LISTEN_CONNECTION: ${{ secrets.SERVICE_BUS_LISTEN_CONNECTION }}
+          COPE_CLIENT_SECRET: ${{ secrets.COPE_CLIENT_SECRET }}
         run: |
           # Federated identity - preferred, nothing stored and nothing expires.
           has_azure=false
@@ -140,6 +142,12 @@ jobs:
             has_azure=true
           elif [ -n "$AZURE_CREDENTIALS" ]; then
             has_azure=true
+          fi
+
+          # Gateway client secret for the Cope end-to-end scenario.
+          has_gateway=false
+          if [ -n "$COPE_CLIENT_SECRET" ]; then
+            has_gateway=true
           fi
 
           # Shared-secret fallback for tenants where app registration/RBAC needs an admin.
@@ -181,6 +189,7 @@ jobs:
             echo "has_data_access=$has_data_access"
             echo "has_org_token=$has_org_token"
             echo "has_sas=$has_sas"
+            echo "has_gateway=$has_gateway"
           } >> "$GITHUB_OUTPUT"
 
           {
@@ -296,14 +305,12 @@ jobs:
         run: cat func.log || true
 
   cope-pipeline-e2e:
-    name: "Cope Pipeline E2E (headless, Azure SDK) [${{ inputs.environment || 'dev' }}]"
-    # Runs on every push/PR. Same end-to-end path as azure-portal-e2e (Service Bus -> Foundry
-    # -> Blob) but driven straight through the Azure SDK with federated (OIDC) auth: no
-    # browser, no user sign-in, no MFA, no stored secret, nothing that can expire. This is the
-    # job that actually proves the pipeline works; azure-portal-e2e only adds UI coverage.
+    name: "Cope Pipeline E2E (gateway submit + poll) [${{ inputs.environment || 'dev' }}]"
+    # Submits a property request through the Cope gateway and polls the orchestration until it
+    # completes - the same flow used manually on dev and prod. Requires COPE_CLIENT_SECRET.
     needs: preflight
-    if: ${{ needs.preflight.outputs.has_data_access == 'true' }}
-    timeout-minutes: 15
+    if: ${{ needs.preflight.outputs.has_gateway == 'true' }}
+    timeout-minutes: 25
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'dev' }}
     steps:
@@ -314,19 +321,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Cope pipeline E2E (headless)
+      - name: Run Cope pipeline E2E (gateway)
         env:
-          # OIDC: the token is requested from GitHub and exchanged with Entra at run time.
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID || vars.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID || vars.AZURE_TENANT_ID }}
-          # No-admin-required fallback.
-          SERVICE_BUS_CONNECTION: ${{ secrets.SERVICE_BUS_CONNECTION }}
-          STORAGE_SAS_URL: ${{ secrets.STORAGE_SAS_URL }}
-          STORAGE_CONNECTION_STRING: ${{ secrets.STORAGE_CONNECTION_STRING }}
-          # Environment-specific resource names (Settings > Environments > Variables)
-          SERVICE_BUS_NAMESPACE_FQDN: ${{ vars.SERVICE_BUS_NAMESPACE_FQDN || 'cope-pocsb.servicebus.windows.net' }}
-          STORAGE_ACCOUNT_URL: ${{ vars.STORAGE_ACCOUNT_URL || 'https://copepocsa.blob.core.windows.net' }}
-          COPE_QUEUE_NAME: ${{ vars.COPE_QUEUE_NAME || 'cope-requests' }}
+          COPE_CLIENT_SECRET: ${{ secrets.COPE_CLIENT_SECRET }}
+          COPE_CLIENT_ID: ${{ vars.COPE_CLIENT_ID || '7001531c-5800-47e6-bf98-5edb7a883817' }}
+          COPE_TENANT_ID: ${{ vars.COPE_TENANT_ID || '03e832ce-094d-4423-b864-c11e2a626509' }}
+          COPE_API_ID: ${{ vars.COPE_API_ID || '6eb59948-6e24-4124-8383-3acbafcd0160' }}
+          COPE_SUBMIT_URL: ${{ vars.COPE_SUBMIT_URL || 'https://func-sn-data-dev-gateway.azurewebsites.net/api/submit' }}
         run: npm run test:integration:cope-e2e
 
   cope-sas:

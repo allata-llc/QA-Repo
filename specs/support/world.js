@@ -11,12 +11,6 @@ class CustomWorld {
     this.serviceBusClient = null;
     this.serviceBusSender = null;
     this.pipelineMessage = null;
-    this.blobServiceClient = null;
-    this.copeMessage = null;
-    this.copeContainersBefore = null;
-    this.copeOutputContainerName = null;
-    this.copeOutputBlobName = null;
-    this.copeOutputContent = null;
   }
 }
 

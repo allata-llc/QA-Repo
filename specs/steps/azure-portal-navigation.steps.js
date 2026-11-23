@@ -126,14 +126,6 @@ When('I refresh the queue Overview page to see the published message', { timeout
   await this.azurePortal.refreshQueueOverview();
 });
 
-When('I open the output blob in storage account {string} in the Azure Portal', { timeout: 300 * 1000 }, async function (storageAccountName) {
-  assert.ok(this.copeOutputContainerName, 'Output container name not set - run the blob polling step first');
-  assert.ok(this.copeOutputBlobName, 'Output blob name not set - run the blob polling step first');
-  await this.azurePortal.openStorageContainer(storageAccountName, this.copeOutputContainerName);
-  await this.azurePortal.openBlob(this.copeOutputBlobName);
-  await this.azurePortal.viewBlobContent();
-});
-
 After({ tags: '@azure-portal' }, async function () {
   // Keep the final blob content visible for a while instead of closing immediately.
   if (this.azurePage) await this.azurePage.waitForTimeout(45 * 1000);
