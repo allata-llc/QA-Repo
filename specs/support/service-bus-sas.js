@@ -1,8 +1,6 @@
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
-const Long = require('long');
-const { ServiceBusClient } = require('@azure/service-bus');
-const { createAzureCredential } = require('./azure-credential');
+const { createUniqueCorrelationId } = require('./cope-pipeline');
 
 const DEFAULT_SAS_TTL_SECONDS = 3600;
 const SERVICE_BUS_API_VERSION = '2021-05';
@@ -79,67 +77,33 @@ function brokerProperties({ messageId, correlationId, label }) {
   });
 }
 
-function createPeekClient(env = process.env, namespaceName) {
-  const listenConnection = env.SERVICE_BUS_LISTEN_CONNECTION?.trim();
-  if (listenConnection) {
-    return { client: new ServiceBusClient(listenConnection), authMode: 'listen connection string' };
-  }
-
-  const connection = env.SERVICE_BUS_CONNECTION?.trim();
-  if (connection) {
-    // An EntityPath pins the client to one queue, so it cannot peek any other.
-    assert.ok(
-      !/(^|;)\s*EntityPath\s*=/i.test(connection),
-      'SERVICE_BUS_CONNECTION is scoped to a single entity (EntityPath=...) and cannot peek other queues. Set SERVICE_BUS_LISTEN_CONNECTION to a namespace-level connection string whose policy has the Listen claim.'
-    );
-    return { client: new ServiceBusClient(connection), authMode: 'connection string' };
-  }
-
-  return {
-    client: new ServiceBusClient(namespaceHost(env, namespaceName), createAzureCredential(env)),
-    authMode: 'Azure identity'
+async function publishPropertyRequest({ request, resourceUri, token, correlationId, sourceSystem, line1, city, state, zipCode }) {
+  const uniqueCorrelationId = createUniqueCorrelationId(correlationId);
+  const message = {
+    requestMetadata: {
+      correlationId: uniqueCorrelationId,
+      sourceSystem,
+      requestTimestamp: new Date().toISOString()
+    },
+    propertyAddress: { line1, line2: '', city, state, zipCode }
   };
-}
-
-// fromSequenceNumber is mandatory here: the SDK caches the last peeked sequence number per
-// entity on the connection, so polling without it returns nothing after the first attempt.
-async function peekFromStart(receiver, maxMessageCount) {
-  try {
-    return await receiver.peekMessages(maxMessageCount, { fromSequenceNumber: Long.ZERO });
-  } finally {
-    await receiver.close();
-  }
-}
-
-async function peekQueue(client, queueName, maxMessageCount) {
-  return peekFromStart(client.createReceiver(queueName, { receiveMode: 'peekLock' }), maxMessageCount);
-}
-
-async function peekDeadLetterQueue(client, queueName, maxMessageCount) {
-  const receiver = client.createReceiver(queueName, {
-    subQueueType: 'deadLetter',
-    receiveMode: 'peekLock'
+  const response = await request.post(messagesUrl(resourceUri), {
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+      BrokerProperties: brokerProperties({ messageId: uniqueCorrelationId, correlationId: uniqueCorrelationId })
+    },
+    data: JSON.stringify(message)
   });
-  return peekFromStart(receiver, maxMessageCount);
-}
-
-function bodyAsText(message) {
-  const body = message?.body;
-  if (body === undefined || body === null) return '';
-  if (typeof body === 'string') return body;
-  if (Buffer.isBuffer(body)) return body.toString('utf8');
-  return JSON.stringify(body);
+  return { correlationId: uniqueCorrelationId, response };
 }
 
 module.exports = {
   SERVICE_BUS_API_VERSION,
-  bodyAsText,
   brokerProperties,
   buildQueueSasToken,
-  createPeekClient,
   generateSasToken,
   messagesUrl,
   namespaceHost,
-  peekDeadLetterQueue,
-  peekQueue
+  publishPropertyRequest
 };

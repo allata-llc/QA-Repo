@@ -133,7 +133,6 @@ jobs:
           STORAGE_CONNECTION_STRING: ${{ secrets.STORAGE_CONNECTION_STRING }}
           SERVICE_BUS_SAS_KEY_COPE_REQUESTS: ${{ secrets.SERVICE_BUS_SAS_KEY_COPE_REQUESTS }}
           SERVICE_BUS_SAS_KEY_COPE_REQUESTS_DEV: ${{ secrets.SERVICE_BUS_SAS_KEY_COPE_REQUESTS_DEV }}
-          SERVICE_BUS_LISTEN_CONNECTION: ${{ secrets.SERVICE_BUS_LISTEN_CONNECTION }}
           COPE_CLIENT_SECRET: ${{ secrets.COPE_CLIENT_SECRET }}
         run: |
           # Federated identity - preferred, nothing stored and nothing expires.
@@ -174,13 +173,10 @@ jobs:
             done
           fi
 
-          # Queue-scoped "bulk-send-key" primary keys, one per queue. The Send claim cannot
-          # peek, and SERVICE_BUS_CONNECTION here is an entity-scoped send-only string, so the
-          # peek-back assertion needs its own namespace-level Listen credential.
+          # Queue-scoped "bulk-send-key" primary keys, one per queue.
           has_sas=false
           if [ -n "$SERVICE_BUS_SAS_KEY_COPE_REQUESTS" ] \
-            && [ -n "$SERVICE_BUS_SAS_KEY_COPE_REQUESTS_DEV" ] \
-            && { [ -n "$SERVICE_BUS_LISTEN_CONNECTION" ] || [ "$has_azure" = "true" ]; }; then
+            && [ -n "$SERVICE_BUS_SAS_KEY_COPE_REQUESTS_DEV" ]; then
             has_sas=true
           fi
 
@@ -354,11 +350,6 @@ jobs:
           SERVICE_BUS_SAS_KEY_NAME: ${{ vars.SERVICE_BUS_SAS_KEY_NAME || 'bulk-send-key' }}
           SERVICE_BUS_SAS_KEY_COPE_REQUESTS: ${{ secrets.SERVICE_BUS_SAS_KEY_COPE_REQUESTS }}
           SERVICE_BUS_SAS_KEY_COPE_REQUESTS_DEV: ${{ secrets.SERVICE_BUS_SAS_KEY_COPE_REQUESTS_DEV }}
-          # Peeking needs Listen, which bulk-send-key does not grant.
-          SERVICE_BUS_LISTEN_CONNECTION: ${{ secrets.SERVICE_BUS_LISTEN_CONNECTION }}
-          SERVICE_BUS_CONNECTION: ${{ secrets.SERVICE_BUS_CONNECTION }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID || vars.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID || vars.AZURE_TENANT_ID }}
         run: npm run test:integration:cope-sas
 
   live-pipeline:
