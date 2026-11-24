@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const { Given, When, Then } = require('@cucumber/cucumber');
 const { createUniqueCorrelationId } = require('../support/cope-pipeline');
+const { getAccessToken } = require('../support/cope-gateway-auth');
 
 const POLL_INTERVAL_MS = 15 * 1000;
 const TERMINAL_FAILURE_STATES = ['Failed', 'Terminated', 'Canceled'];
@@ -24,24 +25,6 @@ function gatewayConfig() {
     callbackUrl: process.env.COPE_CALLBACK_URL || 'http://localhost:5173/',
     clientSecret
   };
-}
-
-// Client-credentials token for the gateway API. Requested fresh for each call so a long
-// poll never outlives its token.
-async function getAccessToken(config) {
-  const response = await fetch(`https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/token`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: config.clientId,
-      client_secret: config.clientSecret,
-      scope: `api://${config.apiId}/.default`
-    })
-  });
-  assert.ok(response.ok, `Token request failed: HTTP ${response.status}`);
-  const body = await response.json();
-  return body.access_token;
 }
 
 Given('the Cope gateway integration is configured', function () {

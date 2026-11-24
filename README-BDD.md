@@ -158,9 +158,12 @@ environment drift on quiet days.
 - **`integration`** - MCP server + `pipeline-function` contract tests. Needs `ORG_REPO_TOKEN`
   (read access to the private `allata-llc/mcp-server` and `allata-llc/pipeline-function`
   repos); skips rather than fails when absent, e.g. on fork PRs.
-- **`cope-pipeline-e2e`** - `test:integration:cope-e2e`, the browserless end-to-end scenario
-  (Service Bus -> Foundry -> Blob) over the Azure SDK. No browser, no user sign-in, no MFA.
-  This is the job that proves the pipeline works.
+- **`cope-pipeline-e2e`** - `test:integration:cope-e2e`, the browserless gateway submit
+  and orchestration polling scenario. It requires `COPE_CLIENT_SECRET` in the selected GitHub
+  Environment and uses `COPE_CLIENT_ID`, `COPE_TENANT_ID`, `COPE_API_ID`, and `COPE_SUBMIT_URL`
+  environment variables when configured. An HTTP 401 from the token endpoint means the
+  configured credentials were rejected: verify the client and tenant IDs and update or rotate
+  the secret value in the selected environment. Preflight checks only whether the secret exists.
 - **`live-pipeline`** - manual only, via `workflow_dispatch` with the `run_live_pipeline`
   input checked. Publishes a real message to the `cope-requests` queue.
 

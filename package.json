@@ -12,7 +12,7 @@
     "test:integration:mcp": "npx cucumber-js specs --require specs/support --require specs/steps --tags @mcp",
     "test:integration:pipeline": "npx cucumber-js specs --require specs/support --require specs/steps --tags \"@pipeline and not @live\"",
     "test:integration:pipeline:live": "npx cucumber-js specs --require specs/support --require specs/steps --tags \"@pipeline and @live\"",
-    "test:integration:cope-e2e": "npx cucumber-js specs --require specs/support --require specs/steps --tags \"@cope and @live and not @ui and not @sas\"",
+    "test:integration:cope-e2e": "npx cucumber-js specs --require specs/support --require specs/steps --tags \"@cope and @live and @gateway and not @ui and not @sas\"",
     "test:integration:cope-sas": "npx cucumber-js specs --require specs/support --require specs/steps --tags @sas",
     "test:integration:storage-tables": "npx cucumber-js specs --require specs/support --require specs/steps --tags @storage-tables",
     "test:integration:rate-limit": "npx cucumber-js specs --require specs/support --require specs/steps --tags @rate-limit",
