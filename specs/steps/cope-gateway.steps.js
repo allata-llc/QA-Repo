@@ -3,6 +3,7 @@ const { Given, When, Then } = require('@cucumber/cucumber');
 const { createUniqueCorrelationId } = require('../support/cope-pipeline');
 
 const POLL_INTERVAL_MS = 15 * 1000;
+const MAX_NOT_FOUND_POLLS = 8;
 const TERMINAL_FAILURE_STATES = ['Failed', 'Terminated', 'Canceled'];
 
 function log(message) {
@@ -83,11 +84,19 @@ When('I submit a property request through the cope gateway with client reference
 Then('the cope orchestration completes within {int} seconds', { timeout: 20 * 60 * 1000 }, async function (timeoutSeconds) {
   const deadline = Date.now() + timeoutSeconds * 1000;
   let status = null;
+  let notFoundCount = 0;
 
   while (Date.now() < deadline) {
     const token = await getAccessToken(this.copeConfig);
     const response = await fetch(this.copeStatusUrl, { headers: { Authorization: `Bearer ${token}` } });
-    assert.ok(response.ok, `Status poll failed: HTTP ${response.status}`);
+    // A 404 right after submit can mean the orchestration is not registered yet; allow a short window.
+    if (response.status === 404 && notFoundCount < MAX_NOT_FOUND_POLLS) {
+      notFoundCount++;
+      log(`Status not found yet (attempt ${notFoundCount}/${MAX_NOT_FOUND_POLLS}); retrying.`);
+      await sleep(POLL_INTERVAL_MS);
+      continue;
+    }
+    assert.ok(response.ok, `Status poll failed: HTTP ${response.status} at ${this.copeStatusUrl}`);
     status = await response.json();
     log(`runtimeStatus=${status.runtimeStatus} phase=${status.customStatus?.phase ?? 'n/a'}`);
 
