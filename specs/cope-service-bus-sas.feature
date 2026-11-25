@@ -24,5 +24,4 @@ Feature: Publish to the cope Service Bus queues with a SAS token over REST
 
     Examples:
       | queue             | correlationId             |
-      | cope-requests     | caf-prospect-sas-rest     |
       | cope-requests-dev | caf-prospect-sas-rest-dev |
